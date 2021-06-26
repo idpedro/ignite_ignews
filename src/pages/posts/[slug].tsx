@@ -1,5 +1,6 @@
 import { GetServerSideProps } from "next";
 import { getSession } from "next-auth/client";
+import { redirect } from "next/dist/next-server/server/api-utils";
 import Head from "next/head";
 import { RichText } from "prismic-dom";
 import { getPrismicClient } from "../../services/prismic";
@@ -41,9 +42,16 @@ export const getServerSideProps: GetServerSideProps = async ({
 }) => {
   const session = await getSession({ req });
   console.log(session);
-
-  // if(!session){}
   const { slug } = params;
+
+  if (!session?.activeSubscription) {
+    return {
+      redirect: {
+        destination: `/posts/preview/${slug}`,
+        permanent: false,
+      },
+    };
+  }
   const prismic = getPrismicClient(req);
   const response = await prismic.getByUID("post", String(slug), {});
   const post = {
@@ -57,5 +65,6 @@ export const getServerSideProps: GetServerSideProps = async ({
   };
   return {
     props: { post },
+    redirect: 60 * 30, // 30 minutes
   };
 };
